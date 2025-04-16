@@ -102,6 +102,14 @@ setMintedItems(minted);
       const response = await axios.post("http://localhost:5000/mint", { id: row.id });
   
       console.log("✅ Minting response:", response.data);
+  
+      // ✅ Check if backend says it's already minted
+      if (response.data?.message?.includes("already been minted")) {
+        showSnackbar("⚠️ This PoR has already been minted.", "warning");
+        setMintedItems((prev) => new Set([...prev, row.rwa_hash]));
+        return;
+      }
+  
       showSnackbar(`🎉 Data ${row.id} successfully minted on Ethereum!`, "success");
   
       // Add hash to mintedItems if successful
@@ -111,17 +119,10 @@ setMintedItems(minted);
       const errorMsg = error.response?.data?.message || error.message;
       console.error("❌ Minting Error:", errorMsg);
   
-      // ✅ Check if backend says it's already minted
-      if (response.data?.message?.includes("already been minted")) {
-        showSnackbar("⚠️ This PoR has already been minted.", "warning");
-        setMintedItems((prev) => new Set([...prev, row.rwa_hash]));
-        return;
-      }
-      else {
-        showSnackbar(`❌ Failed to mint data ${row.id} on Ethereum`, "error");
-      }
+      showSnackbar(`❌ Failed to mint data ${row.id} on Ethereum`, "error");
     }
   };
+  
 
   const showSnackbar = (message, severity = "info") => {
     setSnackbar({ open: true, message, severity });
