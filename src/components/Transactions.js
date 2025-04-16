@@ -13,7 +13,7 @@ const Transactions = () => {
         const fetchTransactions = async () => {
             try {
                 const response = await axios.get(`${API_BASE}/transactions`);
-                setTransactions(response.data);
+                setTransactions(response.data.transactions);
             } catch (err) {
                 console.error("Error fetching transactions:", err);
                 setError("Failed to fetch transactions. Please try again later.");
@@ -41,8 +41,8 @@ const Transactions = () => {
                         <TableHead>
                             <TableRow>
                                 <TableCell><strong>Wallet Address</strong></TableCell>
-                                <TableCell><strong>Amount</strong></TableCell>
-                                <TableCell><strong>Transaction Hash</strong></TableCell>
+                                <TableCell><strong>Minted Amount (USDT)</strong></TableCell>
+                                <TableCell><strong>Ethereum Transaction Hash</strong></TableCell>
                                 <TableCell><strong>Timestamp</strong></TableCell>
                             </TableRow>
                         </TableHead>
@@ -50,13 +50,17 @@ const Transactions = () => {
                             {transactions.map((tx, index) => (
                                 <TableRow key={index}>
                                     <TableCell>{tx.walletAddress}</TableCell>
-                                    <TableCell>{tx.amount}</TableCell>
+                                    <TableCell>{tx.mintedAmount} USDT</TableCell>
                                     <TableCell>
-                                        <a href={`https://sepolia.etherscan.io//tx/${tx.transactionHash}`} target="_blank" rel="noopener noreferrer">
-                                            {tx.transactionHash.substring(0, 10)}...  
-                                        </a>
+                                        {tx.ethTxHash ? (
+                                            <a href={`https://holesky.etherscan.io/tx/${tx.ethTxHash}`} target="_blank" rel="noopener noreferrer">
+                                                {tx.ethTxHash.substring(0, 24)}...
+                                            </a>
+                                        ) : (
+                                            <Typography variant="body2" color="textSecondary">No Tx Hash</Typography>
+                                        )}
                                     </TableCell>
-                                    <TableCell>{new Date(tx.timestamp).toLocaleString()}</TableCell>
+                                    <TableCell>{new Date(tx.mintedAt).toLocaleString()}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>

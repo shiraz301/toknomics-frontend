@@ -37,10 +37,7 @@ const FabricDataDashboard = () => {
   
       const formattedData = response.data.map(item => ({
         ...item,
-        deploy: parseJSON(item.deploy) || {}, // ✅ Fallback to empty object
-        bytecode: parseJSON(item.bytecode) || "", // ✅ Fallback to empty string
-        functions: parseJSON(item.functions) || {}, // ✅ Fallback to empty object
-        proof_of_reserve: parseJSON(item.proof_of_reserve) || {} // ✅ Ensure valid structure
+        proof_of_reserve: parseJSON(item.proof_of_reserve) || {} // Only parse PoR field
       }));
   
       console.log("✅ Formatted Data:", formattedData);
@@ -51,25 +48,21 @@ const FabricDataDashboard = () => {
       showSnackbar('Failed to fetch all data.', 'error');
     }
   };
-  
 
-  // ✅ Safely parse JSON fields
-  // ✅ Safely parse JSON fields
-const parseJSON = (data) => {
-  try {
-    if (!data || typeof data !== "string") return data; // ✅ Handle null, undefined, or non-string values
+  const parseJSON = (data) => {
+    try {
+      if (!data || typeof data !== "string") return data; // Handle null, undefined, or non-string values
 
-    const firstParse = JSON.parse(data);
-    if (typeof firstParse === "string") {
-      return JSON.parse(firstParse); // Handle double-encoded JSON
+      const firstParse = JSON.parse(data);
+      if (typeof firstParse === "string") {
+        return JSON.parse(firstParse); // Handle double-encoded JSON
+      }
+      return firstParse;
+    } catch (error) {
+      console.error("❌ JSON parsing error:", error);
+      return null; // Return null instead of crashing
     }
-    return firstParse;
-  } catch (error) {
-    console.error("❌ JSON parsing error:", error);
-    return null; // Return null instead of crashing
-  }
-};
-
+  };
 
   const showSnackbar = (message, severity = 'info') => {
     setSnackbar({ open: true, message, severity });
@@ -167,19 +160,14 @@ const parseJSON = (data) => {
 
           {selectedData && (
             <>
-              <Typography><b>ID:</b> {selectedData?.id || "N/A"}</Typography>
-              <Typography><b>Deploy:</b> {selectedData?.deploy?.contractName} ({selectedData?.deploy?.symbol})</Typography>
-              <Typography><b>Network:</b> {selectedData?.deploy?.network || "N/A"}</Typography>
-              <Typography><b>Recipient Address:</b> {selectedData?.walletAddress || "N/A"}</Typography>
-              <Typography><b>Submitter Type:</b> {selectedData?.submitterType || "N/A"}</Typography>
-              <Typography><b>API Key (If Institution):</b> {selectedData?.apiKey || "N/A"}</Typography>
-              <Typography><b>PoR USDC:</b> {selectedData?.proof_of_reserve?.usdcBalance ?? "N/A"}</Typography>
-              <Typography><b>PoR EURC:</b> {selectedData?.proof_of_reserve?.eurcBalance ?? "N/A"}</Typography>
-              <Typography><b>PoR Verified At:</b> {selectedData?.proof_of_reserve?.verifiedAt 
-                ? new Date(selectedData.proof_of_reserve.verifiedAt).toLocaleString() 
-                : "N/A"}
-              </Typography>
-              <Typography><b>PoR Verified:</b> {selectedData?.proof_of_reserve?.verified ? "✅ Yes" : "❌ No"}</Typography>
+              <Typography><b>ID:</b> {selectedData.id}</Typography>
+              <Typography><b>Wallet:</b> {selectedData.walletAddress || "N/A"}</Typography>
+              <Typography><b>Submitter:</b> {selectedData.submitterType}</Typography>
+              <Typography><b>API Key:</b> {selectedData.apiKey || "N/A"}</Typography>
+              <Typography><b>PoR Verified:</b> {selectedData.proof_of_reserve?.verified ? "✅ Yes" : "❌ No"}</Typography>
+              <Typography><b>PoR Verified At:</b> {selectedData.proof_of_reserve?.verifiedAt
+                ? new Date(selectedData.proof_of_reserve.verifiedAt).toLocaleString()
+                : "N/A"}</Typography>
             </>
           )}
         </Box>

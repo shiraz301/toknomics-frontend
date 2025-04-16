@@ -22,7 +22,7 @@ const API_BASE = "http://localhost:5000/fabric";
 
 const FabricDataDashboard = () => {
   const [results, setResults] = useState([]);
-  const [mintedItems, setMintedItems] = useState(new Set()); // ✅ Track minted items
+  const [mintedItems, setMintedItems] = useState(new Set()); // Track minted items
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "info" });
   const [selectedData, setSelectedData] = useState(null);
   const [openModal, setOpenModal] = useState(false);
@@ -33,30 +33,47 @@ const FabricDataDashboard = () => {
 
   const fetchAllData = async () => {
     try {
-      const response = await axios.get(`${API_BASE}/fetch-all`);
-      if (!response.data || !Array.isArray(response.data)) throw new Error("Invalid data format received");
-
-      const formattedData = response.data.map((item) => ({
+      const [fabricRes, transactionsRes] = await Promise.all([
+        axios.get(`${API_BASE}/fetch-all`),
+        axios.get("http://localhost:5000/transactions"),
+      ]);
+  
+      const fabricData = fabricRes.data;
+      const transactions = transactionsRes.data?.transactions || [];
+  
+      if (!Array.isArray(fabricData)) throw new Error("Invalid Fabric data format");
+  
+      const mintedHashes = new Set(transactions.map(tx => tx.rwaHash));
+  
+      const formattedData = fabricData.map((item) => ({
         ...item,
-        deploy: parseJSON(item.deploy) || {},
-        bytecode: parseJSON(item.bytecode) || "",
-        functions: parseJSON(item.functions) || {},
         proof_of_reserve: parseJSON(item.proof_of_reserve) || {},
       }));
-
-      console.log("✅ Formatted Data:", formattedData);
+  
       setResults(formattedData);
+  
+      // Store minted RWA hashes
+      const minted = new Set();
+formattedData.forEach(item => {
+  if (mintedHashes.has(item.rwa_hash)) {
+    minted.add(item.rwa_hash); // use rwa_hash instead of item.id
+  }
+});
+setMintedItems(minted);
+
+  
+      setMintedItems(minted);
+  
+      console.log("✅ Fabric:", formattedData);
+      console.log("✅ Minted RWA Hashes:", [...mintedHashes]);
       showSnackbar("All data fetched successfully!", "success");
-
-      // ✅ Load already minted items (if backend provides this information)
-      const mintedIds = formattedData.filter(item => item.minted).map(item => item.id);
-      setMintedItems(new Set(mintedIds));
-
+  
     } catch (error) {
-      console.error("❌ Error fetching all data:", error);
-      showSnackbar("Failed to fetch all data.", "error");
+      console.error("❌ Error fetching data:", error);
+      showSnackbar("Failed to fetch data.", "error");
     }
   };
+  
 
   const parseJSON = (data) => {
     try {
@@ -73,20 +90,36 @@ const FabricDataDashboard = () => {
   };
 
   const handleMintOnEthereum = async (row) => {
+    // Prevent duplicate PoR hash minting
+    if (mintedItems.has(row.rwa_hash)) {
+      showSnackbar("⚠️ This PoR has already been minted.", "warning");
+      return;
+    }
+  
     try {
       console.log(`🚀 Sending data ID: ${row.id} for minting on Ethereum...`);
-
+  
       const response = await axios.post("http://localhost:5000/mint", { id: row.id });
-
+  
       console.log("✅ Minting response:", response.data);
       showSnackbar(`🎉 Data ${row.id} successfully minted on Ethereum!`, "success");
-
-      // ✅ Update state to disable button for this row
-      setMintedItems((prevMinted) => new Set([...prevMinted, row.id]));
-
+  
+      // Add hash to mintedItems if successful
+      setMintedItems((prev) => new Set([...prev, row.rwa_hash]));
+  
     } catch (error) {
-      console.error("❌ Error minting on Ethereum:", error.response?.data || error.message);
-      showSnackbar(`❌ Failed to mint data ${row.id} on Ethereum`, "error");
+      const errorMsg = error.response?.data?.message || error.message;
+      console.error("❌ Minting Error:", errorMsg);
+  
+      // ✅ Check if backend says it's already minted
+      if (response.data?.message?.includes("already been minted")) {
+        showSnackbar("⚠️ This PoR has already been minted.", "warning");
+        setMintedItems((prev) => new Set([...prev, row.rwa_hash]));
+        return;
+      }
+      else {
+        showSnackbar(`❌ Failed to mint data ${row.id} on Ethereum`, "error");
+      }
     }
   };
 
@@ -144,17 +177,18 @@ const FabricDataDashboard = () => {
                     {item.proof_of_reserve?.verified ? "✅ Yes" : "❌ No"}
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="contained"
-                      color="secondary"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleMintOnEthereum(item);
-                      }}
-                      disabled={mintedItems.has(item.id)} // ✅ Disable if already minted
-                    >
-                      {mintedItems.has(item.id) ? "Minted ✅" : "Mint on ETH"}
-                    </Button>
+                  <Button
+  variant="contained"
+  color="secondary"
+  onClick={(e) => {
+    e.stopPropagation();
+    handleMintOnEthereum(item);
+  }}
+  disabled={mintedItems.has(item.rwa_hash)} // <- track by hash
+>
+  {mintedItems.has(item.rwa_hash) ? "Minted ✅" : "Mint on ETH"}
+</Button>
+
                   </TableCell>
                 </TableRow>
               ))}
@@ -167,7 +201,7 @@ const FabricDataDashboard = () => {
         </Typography>
       )}
 
-      {/* ✅ Modern Responsive Modal */}
+      {/* Modal for Data Details */}
       <Modal open={openModal} onClose={handleCloseModal} aria-labelledby="modal-title">
         <Box sx={{
           position: "absolute",
@@ -194,18 +228,29 @@ const FabricDataDashboard = () => {
           </Typography>
 
           {selectedData && (
-            <>
-              <Typography><b>ID:</b> {selectedData?.id || "N/A"}</Typography>
-              <Typography><b>Deploy:</b> {selectedData?.deploy?.contractName} ({selectedData?.deploy?.symbol})</Typography>
-              <Typography><b>Network:</b> {selectedData?.deploy?.network || "N/A"}</Typography>
-              <Typography><b>Recipient Address:</b> {selectedData?.walletAddress || "N/A"}</Typography>
-              <Typography><b>Submitter Type:</b> {selectedData?.submitterType || "N/A"}</Typography>
-              <Typography><b>PoR Verified:</b> {selectedData?.proof_of_reserve?.verified ? "✅ Yes" : "❌ No"}</Typography>
-            </>
-          )}
+  <>
+    <Typography><b>ID:</b> {selectedData?.id || "N/A"}</Typography>
+    <Typography><b>Wallet Address:</b> {selectedData?.walletAddress || "N/A"}</Typography>
+    <Typography><b>Submitter Type:</b> {selectedData?.submitterType || "N/A"}</Typography>
+    <Typography><b>PoR Verified:</b> {selectedData?.proof_of_reserve?.verified ? "✅ Yes" : "❌ No"}</Typography>
+    <Typography><b>PoR Verified At:</b> {selectedData?.proof_of_reserve?.verifiedAt
+      ? new Date(selectedData.proof_of_reserve.verifiedAt).toLocaleString()
+      : "N/A"}
+    </Typography>
+    <Typography>
+      <b>PoR Balance (USDT):</b>{" "}
+      {selectedData?.proof_of_reserve?.usdtBalance !== undefined
+        ? `${selectedData.proof_of_reserve.usdtBalance.toLocaleString()} USDT`
+        : "N/A"}
+    </Typography>
+  </>
+)}
+
+
         </Box>
       </Modal>
 
+      {/* Snackbar for Notifications */}
       <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={handleCloseSnackbar}>
         <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: "100%" }}>
           {snackbar.message}
