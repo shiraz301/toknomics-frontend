@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, CircularProgress } from '@mui/material';
 
-const API_BASE = 'http://localhost:5000';
+const API_BASE = '/api';
 
 const Transactions = () => {
     const [transactions, setTransactions] = useState([]);
