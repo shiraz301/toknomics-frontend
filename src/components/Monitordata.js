@@ -18,7 +18,7 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
-const API_BASE = "http://localhost:5000/fabric";
+const API_BASE = "/api/fabric";
 
 const FabricDataDashboard = () => {
   const [results, setResults] = useState([]);
