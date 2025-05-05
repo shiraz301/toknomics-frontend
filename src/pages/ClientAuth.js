@@ -13,7 +13,7 @@ import {
   Tab
 } from "@mui/material";
 
-const API_BASE = "http://localhost:5000/auth"; // Updated API endpoint
+const API_BASE = "/api/auth"; // Updated API endpoint
 
 const ClientAuth = () => {
   const [tab, setTab] = useState(0);
