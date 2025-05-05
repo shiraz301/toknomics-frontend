@@ -13,7 +13,7 @@ import {
 } from "@mui/material";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 
-const API_BASE = "http://localhost:5000/auth";
+const API_BASE = "/api/auth";
 
 const WalletAndApiKey = () => {
   const [credentials, setCredentials] = useState(null);
