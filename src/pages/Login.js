@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { TextField, Button, Box, Typography, Snackbar, Alert } from '@mui/material';
 import axios from 'axios';
 
-const API_BASE = "http://localhost:5000/auth"; // Updated API base
+const API_BASE = "/api/auth"; // Updated API base
 
 function AdminLogin() {
   const [username, setUsername] = useState('');
