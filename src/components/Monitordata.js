@@ -35,7 +35,7 @@ const FabricDataDashboard = () => {
     try {
       const [fabricRes, transactionsRes] = await Promise.all([
         axios.get(`${API_BASE}/fetch-all`),
-        axios.get("http://localhost:5000/transactions"),
+        axios.get("/api/transactions"),
       ]);
   
       const fabricData = fabricRes.data;
