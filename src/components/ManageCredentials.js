@@ -21,7 +21,7 @@ import {
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CloseIcon from '@mui/icons-material/Close';
 
-const API_BASE = "http://localhost:5000/auth"; // Updated API Base
+const API_BASE = "/api/auth"; // Updated API Base
 
 const ManageCredentials = () => {
     const [institutions, setInstitutions] = useState([]);
