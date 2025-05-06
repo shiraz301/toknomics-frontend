@@ -99,7 +99,7 @@ setMintedItems(minted);
     try {
       console.log(`🚀 Sending data ID: ${row.id} for minting on Ethereum...`);
   
-      const response = await axios.post("http://localhost:5000/mint", { id: row.id });
+      const response = await axios.post("/api/mint", { id: row.id });
   
       console.log("✅ Minting response:", response.data);
   
