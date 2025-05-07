@@ -93,7 +93,6 @@ const WalletAndApiKey = () => {
             { label: "API Key", value: credentials.apiKey },
             { label: "API Secret", value: credentials.apiSecret },
             { label: "Wallet Address", value: credentials.walletAddress },
-            { label: "Private Key", value: credentials.privateKey },
           ].map((item, index) => (
             <Grid item xs={12} key={index}>
               <Paper
